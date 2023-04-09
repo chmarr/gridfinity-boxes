@@ -9,8 +9,10 @@ $fn = 60;
 use <gridfinity_boxes.scad>
 
 count=[1,1]; // Gridfinity 1x1
+
 gridfinity_module_base(count); // Add in the base
-gridfinity_wall(count, height=7); // Add in the side walls. Height is in addition to the 7mm base
-gridfinity_internals_mass(count, 0, radius=4); // Add an internal mass of zero height, but add fillets
-gridfinity_stacking_lip(count,z_offset=14); // Add in the stacking lip. Note that z_offset includes wall
-                                            // and module base.
+gridfinity_wall(count, 7); // Add in the side walls. Height is in addition to the 7mm base
+// gridfinity_internal_mass(count, 7) // Not utilizing this feature in this example
+gridfinity_internals_mass(count, 4, [1,1,1,1]); // Add fillets on all sides
+gridfinity_stacking_lip(count, z_offset=14); // Add in the stacking lip. Note that z_offset includes wall
+                                             // and module base.
