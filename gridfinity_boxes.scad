@@ -31,6 +31,17 @@ function module_dim(count) = [module_side+(count.x-1)*module_spacing, module_sid
 function internal_dim(count) = [internal_side+(count.x-1)*module_spacing, internal_side+(count.y-1)*module_spacing];
 function module_internal_dim(count) = [module_internal_square+(count.x-1)*module_spacing, module_internal_square+(count.y-1)*module_spacing];
 function add_point_and_number(dim, addition) = [dim.x+addition, dim.y+addition];
+function determine_hole_corners(count, current_count, holes_selection) =
+    [
+    // Rear-right
+    holes_selection==2 || holes_selection==1 && current_count.x==count.x-1 && current_count.y==count.y-1,
+    // Rear-left
+    holes_selection==2 || holes_selection==1 && current_count.x==0 && current_count.y==count.y-1,
+    // Front-left
+    holes_selection==2 || holes_selection==1 && current_count.x==0 && current_count.y==0,
+    // Front-right
+    holes_selection==2 || holes_selection==1 && current_count.x==count.x-1 && current_count.y==0
+    ];
 
 // rounded_wedge - creates a prism with rounded sides of different radii at top and bottom
 // size - x,y size of wedge at bottom. Also, see 'external'
@@ -80,8 +91,41 @@ module gridfinity_wall_outline(count) {
     }
 }
 
-// gridfinity_insert - creates a gridfinity-compatible base, with origin at the bottom-center.
-module gridfinity_insert () {
+// gridfinity_base_hole - creates an object to remove hole in base for magnets or screws.
+module gridfinity_base_hole() {
+    // Constants derived from spec sheet.
+    outer_hole_diameter = 6.5;
+    outer_hole_depth = 2.0;
+    inner_hole_diameter = 3.0;
+    inner_hole_depth_relative = 2.0; // Spec sheet says 2.5 max. 2.0 used here
+    inner_hole_depth = outer_hole_depth + inner_hole_depth_relative;
+    cylinder(h=outer_hole_depth, d=outer_hole_diameter);
+    cylinder(h=inner_hole_depth, d=inner_hole_diameter);
+}
+
+// gridfinity_base_holes - create up to 4 holes in the proper locations in the gridfinity insert
+// corners - Indicates which corners are to have the magnet/screw hole placed in the base.
+//           A 4-tuple, being these corners [back-right, back-left, front-left, front-right]
+module gridfinity_base_holes(corners=[1,1,1,1]) {
+    // Constants derived_from_spec_sheet
+    hole_offset_from_radius_3 = 4.8;
+    offset = module_side/2 - module_radius_1 + module_radius_3 - hole_offset_from_radius_3;
+    if (corners[0]) {
+        translate([offset,offset]) gridfinity_base_hole();
+    }
+    if (corners[1]) {
+        translate([-offset,offset]) gridfinity_base_hole();
+    }
+    if (corners[2]) {
+        translate([-offset,-offset]) gridfinity_base_hole();
+    }
+    if (corners[3]) {
+        translate([offset,-offset]) gridfinity_base_hole();
+    }
+}
+
+// gridfinity_plane_insert - creates a gridfinity-compatible base, with origin at the bottom-center.
+module gridfinity_plane_insert() {
     // Constants derived from spec sheet.
     height_0 = module_radius_2-module_radius_3; // heights also become radii as angles are 45deg.
     height_1 = 1.8;
@@ -98,6 +142,17 @@ module gridfinity_insert () {
             rounded_wedge([module_internal_square, module_internal_square, height_2], 2*height_0, 2*height_0 + height_2, external=true);
         translate([0, 0, height_0+height_1+height_2])
             rounded_wedge([module_internal_square, module_internal_square, height_3], 2*height_0 + height_2, external=true);
+    }
+}
+
+// gridfinity_insert - creates a gridfinity-compatible base, with origin at bottom-center.
+// corners - Indicates which corners are to have the magnet/screw hole placed in the base.
+//           A 4-tuple, being these corners [back-right, back-left, front-left, front-right]
+module gridfinity_insert(corners=[1,1,1,1]) {
+    difference() {
+        gridfinity_plane_insert();
+        translate([0,0,-epsilon])
+            gridfinity_base_holes(corners);
     }
 }
 
@@ -126,12 +181,14 @@ module gridfinity_module_mass(count, height, z_offset=module_unit_height) {
 //                          along the X and Y axes.
 //                          A "lid" for a container can be created by using just this module.
 // count - see Common Parameters above.
-module gridfinity_module_base(count) {
+// holes - Selects where to put magnet/screw holes. 0-none, 1-corners only, 2-everywhere
+//         Currently,
+module gridfinity_module_base(count, holes=0) {
     plane_height = module_unit_height - module_base_height;
     for(x=[0:count.x-1]) {
         for(y=[0:count.y-1]) {
             translate([x * module_spacing, y*module_spacing])
-                gridfinity_insert();
+                gridfinity_insert(corners=determine_hole_corners(count, [x,y], holes));
         }
     }
     gridfinity_module_mass(count, plane_height, module_base_height);
@@ -226,8 +283,8 @@ module gridfinity_stacking_lip(count, z_offset) {
 // Create an object with the following gridfinity dimensions
 count=[3, 2];
 
-// Create the module base. height=7 and z_offset=0 implied.
-gridfinity_module_base(count);
+// Create the module base. No holes. height=7 and z_offset=0 fixed.
+gridfinity_module_base(count, holes=0);
 
 // at z_offset=7 (default), create walls 14 high.
 gridfinity_wall(count, 14);

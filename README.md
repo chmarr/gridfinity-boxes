@@ -33,7 +33,7 @@ Either modify the last lines in the `gridfinity_boxes.scad` file, or better, cre
 box features you want. Documentation for each of the expected-to-be-called modules is in the scad file, but here's a quick run down. 
 There are five possible modules to call, specified below with their "signatures":
 
-* `gridfinity_module_base(count)`
+* `gridfinity_module_base(count, holes=0)`
 * `gridfinity_wall(count, height, z_offset=module_unit_height)`
 * `gridfinity_internal_mass(count, height, z_offset=module_unit_height)`
 * `gridfinity_internal_fillets(count, radius, sides=[1,1,1,1], z_offset=module_unit_height)`
@@ -53,6 +53,7 @@ and the stacking lip will usually appear higher.
 ### gridfinity_module_base
 Creates the container base, including the X x Y inserts and a overall base layer. Always 7mm high. The origin of this and other features
 is the bottom-center of the *first* insert.
+* *holes* -- Selects to put holes in the bottom of the module, as per spec. 0-No holes. 1-Holes in corners only. 2-Holes everywhere.
 
 ### gridfinity_wall
 Creates the wall around the outside of the box.
