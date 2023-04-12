@@ -22,24 +22,31 @@ This project is not a remix of that, but rather a “clean-room” implementatio
 
 The base-plate that was used for testing dimensions is this one: https://www.printables.com/model/417152-gridfinity-specification/files .
 
-## Instructions
+## Quickstart Instructions
 
-Some familiarity with OpenSCAD is required. But it's fairly simple; much, much simpler than Fusion360.
+Some familiarity with OpenSCAD is required. But it's fairly simple; much, much simpler than Fusion360. First, download all the .scad files into the same folder.
 
-Tip: If you have git on your computer, try cloning this project rather than downloading. You can keep up-to-date simply
-by using 'git pull'.
+Edit one of the sample files (simple\_box.scad, box\_with\_inserts.scad, etc) and
+make changes to the values as required. Then render and save your .stl file.
 
-Either modify the last lines in the `gridfinity_boxes.scad` file, or better, create a new file based on `example1.scad`. Edit to create the
-box features you want. Documentation for each of the expected-to-be-called modules is in the scad file, but here's a quick run down. 
-There are five possible modules to call, specified below with their "signatures":
+## Involved Instructions
+
+Tip: If you have git on your computer, try cloning this project rather than downloading. You can keep up-to-date simply by using 'git pull'.
+
+By examining the example .scad files, you can see the gridfinity_* calls
+that need to be executed to create the desired features. Documentation
+on the expected-to-be-called SCAD modules follows.
+
+There are serveral possible modules to call, specified below with their "signatures":
 
 * `gridfinity_module_base(count, holes=0)`
 * `gridfinity_wall(count, height, z_offset=module_unit_height)`
 * `gridfinity_internal_mass(count, height, z_offset=module_unit_height)`
+* `gridfinity_square_bores(count, size, z_offset, repeat=[1,1], top_radius=0, bottom_radius=0, top_sides=[1,1,1,1], bottom_sides=[1,1,1,1])`
 * `gridfinity_internal_fillets(count, radius, sides=[1,1,1,1], z_offset=module_unit_height)`
 * `gridfinity_stacking_lip(count, z_offset)`
 
-One doesn't need to call them all; just the ones to get the feature you want. In almost all cases the first two will be called.
+One doesn't need to call them all; just the ones to get the feature you want. Generally, the first two will be called, with the others being optional.
 
 ### Common parameters
 
@@ -59,7 +66,19 @@ is the bottom-center of the *first* insert.
 Creates the wall around the outside of the box.
 
 ### gridfinity_internal_mass
-Within the walls, creates a solid mass. This is not especially useful at this time, but will be once additional features become available.
+Within the walls, creates a solid mass. Most useful as the positive part
+of a combination with the square_bores below.
+
+### gridfinity_square_bores
+Creates a repeating set of "bores" to subtract from the internal_mass created above.
+* *size* -- The [x,y,depth] of the bores to create.
+* *z_offset* -- The z-offset of the _top_ of the bore. this is typically level with the top of the internal mass.
+* *repeat* -- The number of separate bores to create in the X and Y direction.
+* *top_radius* -- If non-0, the radius of the curve at the top of the bore.
+* *bottom_radius* -- If non-0, the radius of the curve at the bottom of the bore.
+* *top_sides*, *bottom_sides* -- Which sides of the bore, at the top and bottom,
+that have a curved side. Each value is a 4-tuple of true/false values, where
+_true_ creates a curve on that side. The order is "[right, back, left, front]". The default is "all sides".
 
 ### gridfinity_internal_fillets
 Creates rounded fillets, either at the top of the base, or the top of the internal mass.

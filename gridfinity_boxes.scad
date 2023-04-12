@@ -163,6 +163,77 @@ module gridfinity_module_mass(count, height, z_offset=module_unit_height) {
         gridfinity_module_outline(count);
 }
 
+module gridfinity_square_bore_top_fillet_part(size, radius, extension, part){
+    if(part==0) { // right
+        translate([size.x/2,-size.y/2-extension,0])
+            rotate([-90,0,0])
+            isolated_fillet(radius, size.y + 2*extension + 2*epsilon);
+    }
+    if(part==1) { // back
+        translate([size.x/2+extension,size.y/2,0])
+            rotate([-90,0,90])
+            isolated_fillet(radius, size.x + 2*extension + 2*epsilon);
+    }
+    if(part==2) { // left
+        translate([-size.x/2,size.y/2+extension,0])
+            rotate([-90,0,180])
+            isolated_fillet(radius, size.y + 2*extension + 2*epsilon);
+    }
+    if(part==3) { // front
+        translate([-size.x/2-extension,-size.y/2,0])
+            rotate([-90,0,-90])
+            isolated_fillet(radius, size.x + 2*extension + 2*epsilon);
+    }
+}
+
+module gridfinity_square_bore_top_fillet(size, radius, sides) {
+    corner_pairs=[[0,1],[1,2],[2,3],[3,0]];
+    for(side = [for (i=[0:3]) if (sides[i]) i]) {
+        gridfinity_square_bore_top_fillet_part(size, radius, 0, side);
+    }
+    for(pair = corner_pairs) {
+        if(sides[pair[0]] && sides[pair[1]]) { //back-right
+            intersection_for(side=pair) {
+                gridfinity_square_bore_top_fillet_part(size, radius, radius, side);
+            }
+        }
+    }   
+}
+
+module gridfinity_single_square_bore(size, top_radius=0, bottom_radius=0, top_sides=[1,1,1,1], bottom_sides=[1,1,1,1]) {
+    translate([0,0,epsilon]) {
+        difference() {
+            translate([-size.x/2, -size.y/2, -size.z]) cube(size);
+            if(bottom_radius>0){
+                if(bottom_sides[0]) { // right
+                    translate([size.x/2+epsilon, -size.y/2-epsilon, -size.z-epsilon])
+                        rotate([90,0,180])
+                        isolated_fillet(bottom_radius, size.y + 2*epsilon);
+                }
+                if(bottom_sides[1]) { // back
+                    translate([size.x/2+epsilon, size.y/2+epsilon, -size.z-epsilon])
+                        rotate([90,0,-90])
+                        isolated_fillet(bottom_radius, size.x + 2*epsilon);
+                
+                }
+                if(bottom_sides[2]) { // left
+                    translate([-size.x/2-epsilon, size.y/2+epsilon, -size.z-epsilon])
+                        rotate([90,0,0])
+                        isolated_fillet(bottom_radius, size.y + 2*epsilon);
+                }
+                if(bottom_sides[3]) { // front
+                    translate([-size.x/2-epsilon, -size.y/2-epsilon, -size.z-epsilon])
+                        rotate([90,0,90])
+                        isolated_fillet(bottom_radius, size.x + 2*epsilon);
+                }
+            }
+        }
+        if(top_radius>0){
+                gridfinity_square_bore_top_fillet(size, top_radius, top_sides);
+        }
+    }
+}
+
 // ********************************************************************************************
 // The following modules are expected to be called by the user to create the desired container.
 
@@ -200,6 +271,24 @@ module gridfinity_internal_mass(count, height, z_offset=module_unit_height) {
     translate([0, 0, z_offset])
         linear_extrude(height=height)
             gridfinity_internal_outline(count);
+}
+
+module gridfinity_square_bores(count, size, z_offset, repeat=[1,1], top_radius=0, bottom_radius=0,
+                              top_sides=[1,1,1,1], bottom_sides=[1,1,1,1]){
+    dim = internal_dim(count);
+    total_space = [dim.x-size.x*repeat.x, dim.y-size.y*repeat.y];
+    interval_space = [total_space.x/(repeat.x+1), total_space.y/(repeat.y+1)];
+    repeat_space = [size.x+interval_space.x, size.y+interval_space.y];
+    start_coord = [-internal_side/2+size.x/2+interval_space.x, -internal_side/2+size.y/2+interval_space.y];
+    
+    echo(dim, total_space, interval_space, repeat_space, start_coord);
+    
+    for(x=[0: repeat.x-1]) {
+        for(y=[0: repeat.y-1]) {
+            translate([start_coord.x+x*repeat_space.x, start_coord.y+y*repeat_space.y,z_offset])
+                gridfinity_single_square_bore(size, top_radius, bottom_radius, top_sides, bottom_sides);
+        }
+    }
 }
 
 // gridfinity_wall - creates the side walls of the module, with the solid forming the sides of
