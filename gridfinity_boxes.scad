@@ -22,6 +22,7 @@ module_unit_height=7;
 module_internal_square = module_side - 2*module_radius_1;
 internal_radius = module_radius_3;
 internal_side=module_side - 2*(1.9 + 0.7);
+hole_offset_from_radius_3 = 4.8;
 
 // ***************************************************************************
 // The following functions and modules are not expected to be called directly.
@@ -108,7 +109,6 @@ module gridfinity_base_hole() {
 //           A 4-tuple, being these corners [back-right, back-left, front-left, front-right]
 module gridfinity_base_holes(corners=[1,1,1,1]) {
     // Constants derived_from_spec_sheet
-    hole_offset_from_radius_3 = 4.8;
     offset = module_side/2 - module_radius_1 + module_radius_3 - hole_offset_from_radius_3;
     if (corners[0]) {
         translate([offset,offset]) gridfinity_base_hole();
@@ -234,6 +234,26 @@ module gridfinity_single_square_bore(size, top_radius=0, bottom_radius=0, top_si
     }
 }
 
+// creates an object to remove the mass required to insert a magnet.
+module gridfinity_magnet_single_hole(hole_width, hole_height){
+    slot_length = hole_offset_from_radius_3 - module_radius_3 + module_radius_1;
+    cylinder(d=hole_width, h=hole_height);
+    translate([-slot_length-epsilon, -hole_width/2, 0]) cube([slot_length+2*epsilon, hole_width, hole_height]);
+}
+
+// creates an object to remove the mass required to insert a magnet at each of the corners
+module gridfinity_magnet_holes(count, hole_width, hole_height) {
+    offset = module_side/2 - module_radius_1 + module_radius_3 - hole_offset_from_radius_3;
+    // back right
+    translate([module_spacing*(count.x-1)+offset, module_spacing*(count.y-1)+offset]) rotate([0,0,180])gridfinity_magnet_single_hole(hole_width, hole_height);
+    // back left
+    translate([-offset, module_spacing*(count.y-1)+offset]) rotate([0,0,-90]) gridfinity_magnet_single_hole(hole_width, hole_height);
+    // front left
+    translate([-offset,-offset]) gridfinity_magnet_single_hole(hole_width, hole_height);
+    // front right
+    translate([module_spacing*(count.x-1)+offset, -offset]) rotate([0,0,90]) gridfinity_magnet_single_hole(hole_width, hole_height);
+}
+
 // ********************************************************************************************
 // The following modules are expected to be called by the user to create the desired container.
 
@@ -252,17 +272,28 @@ module gridfinity_single_square_bore(size, top_radius=0, bottom_radius=0, top_si
 //                          along the X and Y axes.
 //                          A "lid" for a container can be created by using just this module.
 // count - see Common Parameters above.
-// holes - Selects where to put magnet/screw holes. 0-none, 1-corners only, 2-everywhere
-//         Currently,
-module gridfinity_module_base(count, holes=0) {
+// holes - Selects where to put magnet/screw holes. 0-none, 1-corners only, 2-everywhere, 3-slide-in holes in corners
+// hole_width - Width of slide-in hole (only if holes==3)
+// hole_height - Height of slide-in hole (only if holes==3)
+// hole_offset - Height of the hole offset from the base (only if holes==3)
+module gridfinity_module_base(count, holes=0, hole_width, hole_height, hole_offset=0.2) {
     plane_height = module_unit_height - module_base_height;
-    for(x=[0:count.x-1]) {
-        for(y=[0:count.y-1]) {
-            translate([x * module_spacing, y*module_spacing])
-                gridfinity_insert(corners=determine_hole_corners(count, [x,y], holes));
+    // if holes==3, we're going to add the slide-in magnet holes as a difference overall
+    holes_ = holes == 3 ? 0 : holes;
+    difference() {
+        union() {
+            for(x=[0:count.x-1]) {
+                for(y=[0:count.y-1]) {
+                    translate([x * module_spacing, y*module_spacing])
+                        gridfinity_insert(corners=determine_hole_corners(count, [x,y], holes_));
+                }
+            }
+            gridfinity_module_mass(count, plane_height, module_base_height);
+        }
+        if(holes==3) {
+            translate([0,0,hole_offset]) gridfinity_magnet_holes(count, hole_width, hole_height);
         }
     }
-    gridfinity_module_mass(count, plane_height, module_base_height);
 }
 
 // gridfinity_internal_mass - creates a solid block bounded by the object's walls.

@@ -39,7 +39,7 @@ on the expected-to-be-called SCAD modules follows.
 
 There are serveral possible modules to call, specified below with their "signatures":
 
-* `gridfinity_module_base(count, holes=0)`
+* `gridfinity_module_base(count, holes=0, hole_width, hole_height, hole_offset=0.2)`
 * `gridfinity_wall(count, height, z_offset=module_unit_height)`
 * `gridfinity_internal_mass(count, height, z_offset=module_unit_height)`
 * `gridfinity_square_bores(count, size, z_offset, repeat=[1,1], top_radius=0, bottom_radius=0, top_sides=[1,1,1,1], bottom_sides=[1,1,1,1])`
@@ -60,7 +60,10 @@ and the stacking lip will usually appear higher.
 ### gridfinity_module_base
 Creates the container base, including the X x Y inserts and a overall base layer. Always 7mm high. The origin of this and other features
 is the bottom-center of the *first* insert.
-* *holes* -- Selects to put holes in the bottom of the module, as per spec. 0-No holes. 1-Holes in corners only. 2-Holes everywhere.
+* *holes* -- Selects to put holes in the bottom of the module, as per spec. 0-No holes. 1-Holes in corners only. 2-Holes everywhere. 3-Slide-in holes in corners
+* *hole_width* -- The width of a slide in hole. Typically very slightly smaller than the magnet to allow it to be wedged in. (Only if holes==3)
+* *hole_height* -- The height of a slide in hole. Typically this is slightly larger than the magnet to account for variability. (Only if holes==3)
+* *hole_offset* -- The vertical offset of the hole from the bottom. Typically just one or two layer's worth to keep the magnet close to the base magnets. (Only if holes==3. Defaults to 0.2)
 
 ### gridfinity_wall
 Creates the wall around the outside of the box.
