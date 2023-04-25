@@ -23,8 +23,14 @@ internal_radius=10;
 // On which sides to place curves. [right, back, left, front].
 internal_radius_sides = [false, true, false, true];
 
-// Whether or not to insert holes at the bottom of the box. 0=no holes, 1=corners only, 2=everywhere.
+// Whether or not to insert holes at the bottom of the box. 0=no holes, 1=corners only, 2=everywhere, 3-slide-in holes in corners
 gridfinity_holes=0;
+
+// Width of slide-in magnet hole (only if gridfinity_holes==3)
+gridfinity_hole_width=5.9;
+
+// Height of slide-in magnet hole (only if gridfinity_holes==3)
+gridfinity_hole_height=2.2;
 
 // And now the fun stuff.
 module customizer_break(){}
@@ -32,7 +38,7 @@ module customizer_break(){}
 use <gridfinity_boxes.scad>
 $fn = 40;
 
-gridfinity_module_base(gridfinity_count, holes=gridfinity_holes);
+gridfinity_module_base(gridfinity_count, holes=gridfinity_holes, hole_width=gridfinity_hole_width, hole_height=gridfinity_hole_height);
 adjusted_box_height = add_stacking_lip ? ceil(box_height/7)*7 : box_height;
 gridfinity_wall(gridfinity_count, adjusted_box_height-7);
 gridfinity_internal_fillets(gridfinity_count, internal_radius, sides=internal_radius_sides);
