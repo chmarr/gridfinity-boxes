@@ -72,6 +72,42 @@ module isolated_fillet(radius, length) {
     }
 }
 
+// Translates an internal construction with front left corner at [0,0,0] to
+// our final reference.
+module internal_translate(z_offset=module_unit_height) {
+    translate([-internal_side/2, -internal_side/2, z_offset]) { children(); }
+}
+
+module bottom_fillets(dimensions, radius, sides) {
+    if ( radius > 0 ) {
+        if ( sides[0] ) {
+            // x=N side ; right
+            translate([dimensions.x, 0, 0])
+                rotate([90,0,180])
+                isolated_fillet(radius, dimensions.y);
+        }
+        if ( sides[1] ) {
+            // y=N side ; back
+            translate([dimensions.x, dimensions.y, 0])
+                rotate([90,0,-90])
+                isolated_fillet(radius, dimensions.x);
+        }
+        if ( sides[2] ) {
+            // x=0 side ; left
+            translate([0, dimensions.y, 0])
+                rotate([90, 0, 0])
+                isolated_fillet(radius, dimensions.y);
+        }
+        if ( sides[3] ) {
+            // y=0 side ; front
+            translate([0, 0, 0])
+                rotate([90,0,90])
+                isolated_fillet(radius, dimensions.x);
+        }
+    }
+}
+
+
 module gridfinity_module_outline(count) {
     translate([-module_side/2 + module_radius_1, -module_side/2 + module_radius_1])
         offset(r=module_radius_1)
@@ -264,7 +300,10 @@ module gridfinity_magnet_holes(count, hole_width, hole_height) {
 // z_offset - the bottom offset of the component. Defaults to "module_unit_height" of 7, which is then
 //            typically the top of the module base. If not 7, then typically a multiple thereof.
 // 
-// 
+//
+// radius - The radius of fillets at the bottom of the box or compartments.
+// sides - specifies which sides the fillet will be created, where non-zero creates that fillet.
+//         The positions are [right, back, left, top]. Defaults to all sides.
 
 // gridfinity_module_base - creates the base for our object. Consisting of 1 or more inserts and a 
 //                          base covering/joining all inserts. The object's origin is the bottom-center
@@ -332,40 +371,49 @@ module gridfinity_wall(count, height, z_offset=module_unit_height) {
         gridfinity_wall_outline(count);
 }
 
+// gridfinity_internal_dividers - creates dividers within the box compartment. Also
+//                                creates optional rounded fillets at the bottom of
+//                                each compartment
+// count, radius, sides, z_offset - see Common Parameters above.
+// divider_count - the number of dividers in the [x,y] dimension. [0,0] creates no dividers
+// divider_thickness - the thickness of the divider walls
+// divider_height - the height of the divider measured from the internal bottom
+
+module gridfinity_internal_dividers(count, divider_count, divider_thickness, divider_height, radius, sides=[1,1,1,1], z_offset=module_unit_height) {
+    id = internal_dim(count);
+    step = [
+        (id.x + divider_thickness) / (divider_count.x+1),
+        (id.y + divider_thickness) / (divider_count.y+1)
+    ];
+    internal_translate() {
+        if(divider_count.x > 0) {
+            for(ix = [1: divider_count.x]) {
+                translate([ix*step.x - divider_thickness, 0, 0]) cube([divider_thickness, id.y, divider_height]);
+            }
+        }
+        if(divider_count.y > 0) {
+            for(iy = [1: divider_count.y]) {
+                translate([0, iy*step.y - divider_thickness, 0]) cube([id.x, divider_thickness, divider_height]);
+            }
+        }
+        if(radius>0) {
+            for(ix = [0: divider_count.x]) {
+                translate([ix*step.x, 0, 0]) bottom_fillets([step.x-divider_thickness, id.y], radius, sides);
+            }
+            for(iy = [0: divider_count.y]) {
+                translate([0, iy*step.y, 0]) bottom_fillets([id.x, step.y-divider_thickness], radius, sides);
+            }
+        }
+    }
+}
+
 // gridfinity_internal_fillets - creates rounded fillets which sit atop the module_base or
 //                               internal_mass. Can be called multiple times if different
 //                               radii for the sides is required.
-// count, radius, z_offset - see Common Parameters above.
-// sides - specifies which sides the fillet will be created, where non-zero creates that fillet.
-//         The positions are [right, back, left, top]. Defaults to all sides.
+// count, radius, sides, z_offset - see Common Parameters above.
+// Deprecated. Use "gridfinity_internal_dividers" with divider_count=[0,0] instead.
 module gridfinity_internal_fillets(count, radius, sides=[1,1,1,1], z_offset=module_unit_height) {
-    internal = internal_dim(count);
-    if ( radius > 0 ) {
-        if ( sides[0] ) {
-            // x=N side ; right
-            translate([internal.x - internal_side/2, -internal_side/2, z_offset])
-                rotate([90,0,180])
-                isolated_fillet(radius, internal.y);
-        }
-        if ( sides[1] ) {
-            // y=N side ; back
-            translate([internal.x - internal_side/2, internal.y - internal_side/2, z_offset])
-                rotate([90,0,-90])
-                isolated_fillet(radius, internal.x);
-        }
-        if ( sides[2] ) {
-            // x=0 side ; left
-            translate([-internal_side/2, internal.y - internal_side/2, z_offset])
-                rotate([90, 0, 0])
-                isolated_fillet(radius, internal.y);
-        }
-        if ( sides[3] ) {
-            // y=0 side ; front
-            translate([-internal_side/2, -internal_side/2, z_offset])
-                rotate([90,0,90])
-                isolated_fillet(radius, internal.x);
-        }
-    }
+    gridfinity_internal_dividers(count, divider_count=[0,0], radius=radius, sides=sides, z_offset=z_offset);
 }
 
 // gridfinity_stacking_lip - Adds a fixed height lip to the object to allow other Gridfinity modules

@@ -43,6 +43,7 @@ There are serveral possible modules to call, specified below with their "signatu
 * `gridfinity_wall(count, height, z_offset=module_unit_height)`
 * `gridfinity_internal_mass(count, height, z_offset=module_unit_height)`
 * `gridfinity_square_bores(count, size, z_offset, repeat=[1,1], top_radius=0, bottom_radius=0, top_sides=[1,1,1,1], bottom_sides=[1,1,1,1])`
+* `gridfinity_internal_dividers(count, divider_count, divider_thickness, divider_height, radius, sides=[1,1,1,1], z_offset=module_unit_height)`
 * `gridfinity_internal_fillets(count, radius, sides=[1,1,1,1], z_offset=module_unit_height)`
 * `gridfinity_stacking_lip(count, z_offset)`
 
@@ -56,6 +57,9 @@ All dimensions except *count* are in mm.
 * *height* -- The height of the feature. This is in mm, and usually a multiple of the *gridfinity_unit_height* of **7**.
 * *z_offset* -- The base height of the feature. Most features begin at the top of the module base, so this is the default. Internal fillets
 and the stacking lip will usually appear higher.
+* *radius* -- The radius of the fillet at the internal bottom.
+* *sides* -- A 4-tuple boolean values indicating which side the fillet is to appear on. A "true" or "non-zero" value indicates to put a fillet there.
+The order is "[right, back, left, front]". I.e., the value `[0,1,0,1]` will create fillets at the back and front. The default is "all sides".
 
 ### gridfinity_module_base
 Creates the container base, including the X x Y inserts and a overall base layer. Always 7mm high. The origin of this and other features
@@ -83,11 +87,14 @@ Creates a repeating set of "bores" to subtract from the internal_mass created ab
 that have a curved side. Each value is a 4-tuple of true/false values, where
 _true_ creates a curve on that side. The order is "[right, back, left, front]". The default is "all sides".
 
+### gridfinity_internal_dividers
+* *divider_count* - the number of dividers in the [x,y] dimension. [0,0] creates no dividers
+* *divider_thickness* - the thickness of the divider walls
+* *divider_height* - the height of the divider measured from the internal bottom
+
 ### gridfinity_internal_fillets
 Creates rounded fillets, either at the top of the base, or the top of the internal mass.
-* *radius* -- The radius of curvature of the fillets.
-* *sides* -- A 4-tuple boolean values indicating which side the fillet is to appear on. A "true" or "non-zero" value indicates to put a fillet there.
-The order is "[right, back, left, front]". I.e., the value `[0,1,0,1]` will create fillets at the back and front. The default is "all sides".
+This is deprecated in favour of gridfinity_internal_dividers, which does the same thing.
 
 ### gridfinity_stacking_lip
 Create a fixed-height lip on the box to allow other gridfinity modules to stack atop this.
