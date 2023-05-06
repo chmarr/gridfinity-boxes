@@ -72,6 +72,10 @@ module isolated_fillet(radius, length) {
     }
 }
 
+module isolated_chamfer(width, length) {
+    linear_extrude(length) polygon([[0,0],[width,0],[0,width]]);
+}
+
 // Translates an internal construction with front left corner at [0,0,0] to
 // our final reference.
 module internal_translate(z_offset=module_unit_height) {
@@ -379,19 +383,19 @@ module gridfinity_wall(count, height, z_offset=module_unit_height) {
 // divider_thickness - the thickness of the divider walls
 // divider_height - the height of the divider measured from the internal bottom
 
-module gridfinity_internal_dividers(count, divider_count, divider_thickness, divider_height, radius, sides=[1,1,1,1], z_offset=module_unit_height) {
+module gridfinity_internal_dividers(count, divider_count, divider_thickness=1.2, divider_height, radius, sides=[1,1,1,1], z_offset=module_unit_height) {
     id = internal_dim(count);
     step = [
         (id.x + divider_thickness) / (divider_count.x+1),
         (id.y + divider_thickness) / (divider_count.y+1)
     ];
-    internal_translate() {
-        if(divider_count.x > 0) {
+    internal_translate(z_offset=z_offset) {
+        if(divider_count.x > 0 && divider_height>0) {
             for(ix = [1: divider_count.x]) {
                 translate([ix*step.x - divider_thickness, 0, 0]) cube([divider_thickness, id.y, divider_height]);
             }
         }
-        if(divider_count.y > 0) {
+        if(divider_count.y > 0 && divider_height>0) {
             for(iy = [1: divider_count.y]) {
                 translate([0, iy*step.y - divider_thickness, 0]) cube([id.x, divider_thickness, divider_height]);
             }
@@ -414,6 +418,23 @@ module gridfinity_internal_dividers(count, divider_count, divider_thickness, div
 // Deprecated. Use "gridfinity_internal_dividers" with divider_count=[0,0] instead.
 module gridfinity_internal_fillets(count, radius, sides=[1,1,1,1], z_offset=module_unit_height) {
     gridfinity_internal_dividers(count, divider_count=[0,0], radius=radius, sides=sides, z_offset=z_offset);
+}
+
+// gridfinity_label_tab - creates a tab at the top-rear of the box for labelling
+// count, z_offset - see Common Parameters above.
+// label_width - the width of the label
+// label_thickness - the thickness of the label
+// label_height - the height of the top face of the label above the internal bottom
+module gridfinity_label_tab(count, label_width, label_height, label_thickness=1.0, support_scale=0.2, z_offset=module_unit_height) {
+    id = internal_dim(count);
+    if(label_width>0 && label_thickness>0) {
+        internal_translate(z_offset=z_offset) {
+            translate([0, id.y-label_width, label_height-label_thickness]) {
+                cube([id.x, label_width, label_thickness]);
+                translate([id.x, label_width, 0]) scale([1,1,support_scale]) rotate([0,90,180]) isolated_chamfer(label_width,id.x);
+            }
+        }
+    }
 }
 
 // gridfinity_stacking_lip - Adds a fixed height lip to the object to allow other Gridfinity modules
